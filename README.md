@@ -37,9 +37,12 @@ Beide Pfade kommen aus Umgebungsvariablen — nichts ist hardcodiert.
 | `OBSIDIAN_VAULT_PATH` | `~/Library/Mobile Documents/iCloud~md~obsidian/Documents/Sem_4` | Wurzel des Vaults |
 | `LERNTRACKER_DATA_PATH` | `$OBSIDIAN_VAULT_PATH/.obsidian/plugins/lerntracker/data.json` | Datenbank des Lerntrackers |
 
-Der zweite Pfad ist separat einstellbar, weil in diesem Vault **jeder
-Kursordner zusätzlich ein eigener Obsidian-Vault** ist und damit eine eigene
-`data.json` besitzt. Der Default zeigt auf die des Hauptvaults.
+Der Default für den Vault-Pfad passt zu einem iCloud-synchronisierten Obsidian;
+für ein anderes Setup genügt es, `OBSIDIAN_VAULT_PATH` zu setzen.
+
+Der Lerntracker-Pfad ist separat einstellbar, weil Obsidian-Vaults verschachtelt
+sein können: liegt in einem Unterordner ein weiterer Vault, hat der eine eigene
+`data.json`. Der Default zeigt auf die des Hauptvaults.
 
 ## Tools
 
@@ -139,13 +142,13 @@ Session-Token). Im Browser öffnen, links auf **Connect**, dann:
 
 - Reiter **Tools** → *List Tools* → ein Tool wählen, Argumente eintragen, *Run Tool*
 - Reiter **Resources** → *List Resources* → `vault://structure` anklicken
-- Für die templated Resource den URI direkt eingeben, z. B.
-  `note://Grundlagen Rechnernetze/Flashcards/01_Physikalische_Schicht.md`
+- Für die templated Resource den URI direkt eingeben, nach dem Muster
+  `note://<Kursordner>/Flashcards/<Datei>.md`
 
 Mit abweichendem Vault:
 
 ```bash
-OBSIDIAN_VAULT_PATH="$HOME/Library/Mobile Documents/iCloud~md~obsidian/Documents/Sem_3" mcp dev main.py
+OBSIDIAN_VAULT_PATH="$HOME/Pfad/zu/deinem/Vault" mcp dev main.py
 ```
 
 Zum Ausprobieren der schreibenden Tools lohnt sich ein Wegwerf-Vault:
@@ -163,19 +166,20 @@ Konfigurationsdatei:
 {
   "mcpServers": {
     "obsidian-vault": {
-      "command": "/Users/musakhan/Projects/obsidian-mcp-server/.venv/bin/python",
-      "args": ["/Users/musakhan/Projects/obsidian-mcp-server/main.py"],
+      "command": "/Users/DEIN_NAME/Projects/obsidian-mcp-server/.venv/bin/python",
+      "args": ["/Users/DEIN_NAME/Projects/obsidian-mcp-server/main.py"],
       "env": {
-        "OBSIDIAN_VAULT_PATH": "/Users/musakhan/Library/Mobile Documents/iCloud~md~obsidian/Documents/Sem_4"
+        "OBSIDIAN_VAULT_PATH": "/Users/DEIN_NAME/Pfad/zu/deinem/Vault"
       }
     }
   }
 }
 ```
 
-Wichtig: **absolute Pfade** verwenden, und als `command` das Python **aus dem
-venv** — Claude Desktop startet den Server ohne aktivierte Umgebung, ein bloßes
-`"python3"` fände das `mcp`-Paket nicht.
+Wichtig: **absolute Pfade** verwenden — `~` und `$HOME` werden hier nicht
+expandiert. Als `command` das Python **aus dem venv** angeben: Claude Desktop
+startet den Server ohne aktivierte Umgebung, ein bloßes `"python3"` fände das
+`mcp`-Paket nicht.
 
 Existiert die Datei schon, nur den Eintrag `"obsidian-vault"` in das vorhandene
 `mcpServers`-Objekt einfügen. Danach Claude Desktop komplett beenden und neu

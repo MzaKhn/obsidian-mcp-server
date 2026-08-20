@@ -161,7 +161,7 @@ def get_note(path: str) -> str:
     """Gibt den vollständigen Inhalt einer bestimmten Notiz zurück.
 
     Args:
-        path: Vault-relativer Pfad, z. B. "Grundlagen Rechnernetze/Flashcards/01_Physikalische_Schicht.md".
+        path: Vault-relativer Pfad, z. B. "<Kursordner>/Flashcards/<Thema>.md".
     """
     try:
         target = _resolve_in_vault(path)
@@ -560,7 +560,7 @@ def note_resource(path: str) -> str:
     """Gibt den Inhalt der Notiz unter dem angegebenen Vault-Pfad zurück.
 
     Args:
-        path: Vault-relativer Pfad, z. B. "FPV/Flashcards/Induktion.md".
+        path: Vault-relativer Pfad, z. B. "<Kursordner>/Zusammenfassungen/<Thema>.md".
     """
     target = _resolve_in_vault(path)
     if not target.is_file():
