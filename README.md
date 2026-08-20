@@ -203,3 +203,7 @@ Gegen `mcp` 2.0.0 auf Python 3.14: Tool-Schemas, Resource-Templates,
 stdio-Handshake mit einem echten `ClientSession`, Pfad-Guards, sowie die
 schreibenden Tools gegen einen Wegwerf-Vault (inklusive Mehrtages-Split,
 blockierten Tagen, Nullstunden-Wochentagen und dem Überlauffall).
+
+## Lizenz
+
+MIT — siehe [LICENSE](LICENSE).
