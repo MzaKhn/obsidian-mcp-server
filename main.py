@@ -18,10 +18,7 @@ from mcp.server import MCPServer
 
 # ── Konfiguration ────────────────────────────────────────────────────────────
 
-DEFAULT_VAULT = (
-    Path.home()
-    / "Library/Mobile Documents/iCloud~md~obsidian/Documents/Sem_4"
-)
+DEFAULT_VAULT = Path.home() / "Informatik/Vault"
 
 VAULT = Path(
     os.environ.get("OBSIDIAN_VAULT_PATH", str(DEFAULT_VAULT))
@@ -97,9 +94,15 @@ def _read(path: Path) -> str:
 
 
 def _course_of(rel_path: str) -> str | None:
-    """Kursordner (= erste Pfadkomponente) einer vault-relativen Notiz."""
-    parts = Path(rel_path).parts
-    return parts[0] if len(parts) > 1 else None
+    """Kursordner einer vault-relativen Notiz.
+
+    Normalerweise die erste Pfadkomponente. Im PARA-Layout liegen die Kurse
+    unter nummerierten Bereichsordnern ("20 Bereiche/<Kurs>/…") — dann zählen
+    die ersten zwei.
+    """
+    folders = Path(rel_path).parts[:-1]
+    depth = 2 if folders and re.match(r"\d+ ", folders[0]) else 1
+    return "/".join(folders[:depth]) if len(folders) >= depth else None
 
 
 # ── Tools ────────────────────────────────────────────────────────────────────
@@ -205,9 +208,9 @@ def create_flashcard(front: str, back: str, note_path: str, deck: str = "") -> s
     course = _course_of(source_rel)
     if course is None:
         return (
-            f"Fehler: {source_rel!r} liegt im Vault-Root und gehört zu keinem "
-            "Kursordner — Ziel-Deck lässt sich nicht bestimmen. Bitte 'deck' "
-            "setzen oder eine Notiz innerhalb eines Kursordners angeben."
+            f"Fehler: {source_rel!r} gehört zu keinem Kursordner — Ziel-Deck "
+            "lässt sich nicht bestimmen. Bitte eine Notiz innerhalb eines "
+            "Kursordners angeben."
         )
 
     deck_name = (deck.strip() or source.stem).removesuffix(".md")
@@ -268,7 +271,7 @@ def generate_summary(note_path: str) -> str:
     ) or "(keine Überschriften)"
 
     words = len(body.split())
-    course = _course_of(_rel(target)) or "(Vault-Root)"
+    course = _course_of(_rel(target)) or "(kein Kursordner)"
 
     return (
         f"# Quellnotiz: {_rel(target)}\n"

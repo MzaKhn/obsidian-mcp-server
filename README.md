@@ -34,11 +34,12 @@ Beide Pfade kommen aus Umgebungsvariablen — nichts ist hardcodiert.
 
 | Variable | Default | Bedeutung |
 |---|---|---|
-| `OBSIDIAN_VAULT_PATH` | `~/Library/Mobile Documents/iCloud~md~obsidian/Documents/Sem_4` | Wurzel des Vaults |
+| `OBSIDIAN_VAULT_PATH` | `~/Informatik/Vault` | Wurzel des Vaults |
 | `LERNTRACKER_DATA_PATH` | `$OBSIDIAN_VAULT_PATH/.obsidian/plugins/lerntracker/data.json` | Datenbank des Lerntrackers |
 
-Der Default für den Vault-Pfad passt zu einem iCloud-synchronisierten Obsidian;
-für ein anderes Setup genügt es, `OBSIDIAN_VAULT_PATH` zu setzen.
+Der Default für den Vault-Pfad passt zu einem lokalen Vault unter
+`~/Informatik/Vault`; für ein anderes Setup genügt es, `OBSIDIAN_VAULT_PATH` zu
+setzen.
 
 Der Lerntracker-Pfad ist separat einstellbar, weil Obsidian-Vaults verschachtelt
 sein können: liegt in einem Unterordner ein weiterer Vault, hat der eine eigene
@@ -76,7 +77,9 @@ Quelle: [[01_Physikalische_Schicht]]
 ```
 
 Die Zieldatei ergibt sich aus dem Kursordner der Quellnotiz; `deck` überschreibt
-den Dateinamen. Existiert die Datei nicht, wird sie mit `tags: [decks]`
+den Dateinamen. Kursordner ist der oberste Ordner unter dem Vault — bei
+nummerierten PARA-Bereichen (`20 Bereiche/<Kurs>/…`, `40 Archiv/<Kurs>/…`)
+der Ordner eine Ebene darunter. Dasselbe gilt für `save_summary`. Existiert die Datei nicht, wird sie mit `tags: [decks]`
 angelegt. Eine Karte mit identischer Vorderseite wird übersprungen statt
 doppelt angelegt.
 
