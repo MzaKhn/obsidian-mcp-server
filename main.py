@@ -34,8 +34,8 @@ mcp = MCPServer(
     version="0.1.0",
     instructions=(
         "Zugriff auf einen Obsidian-Studien-Vault: Notizen suchen und lesen, "
-        "Flashcards im Decks-Format anlegen, Notizen für eine Zusammenfassung "
-        "aufbereiten und Lernpläne in den Lerntracker schreiben."
+        "Flashcards im Decks-Format anlegen, Zusammenfassungen speichern "
+        "und Lernpläne in den Lerntracker schreiben."
     ),
 )
 
@@ -200,48 +200,8 @@ def create_flashcard(front: str, back: str, note_path: str, deck: str = "") -> s
 
 
 @mcp.tool()
-def generate_summary(note_path: str) -> str:
-    """Liefert eine Notiz strukturiert (Gliederung, Volltext) zurück, damit das Modell sie zusammenfasst; danach save_summary aufrufen.
-
-    Args:
-        note_path: Vault-relativer Pfad der Notiz.
-    """
-    try:
-        target = _resolve_in_vault(note_path)
-    except ValueError as exc:
-        return f"Fehler: {exc}"
-
-    if not target.is_file():
-        return f"Fehler: Notiz nicht gefunden: {note_path}"
-
-    text = _read(target)
-    body = re.sub(r"\A---\n.*?\n---\n", "", text, flags=re.DOTALL)
-
-    headings = [
-        (len(m.group(1)), m.group(2).strip())
-        for m in re.finditer(r"^(#{1,6})\s+(.*)$", body, re.MULTILINE)
-    ]
-    outline = "\n".join(
-        f"{'  ' * (lvl - 1)}- {title}" for lvl, title in headings
-    ) or "(keine Überschriften)"
-
-    words = len(body.split())
-    course = _course_of(_rel(target)) or "(kein Kursordner)"
-
-    return (
-        f"# Quellnotiz: {_rel(target)}\n"
-        f"Kurs: {course} · {words} Wörter · {len(headings)} Überschriften\n\n"
-        f"## Gliederung\n{outline}\n\n"
-        f"## Volltext\n\n{body.strip()}\n\n"
-        "---\n"
-        "Schreibe daraus eine strukturierte Zusammenfassung. Speichern mit "
-        "save_summary(note_path, summary)."
-    )
-
-
-@mcp.tool()
 def save_summary(note_path: str, summary: str) -> str:
-    """Speichert eine Zusammenfassung im Zusammenfassungen-Ordner des Kurses.
+    """Speichert eine selbst geschriebene Zusammenfassung (Notiz vorher mit get_note lesen) im Zusammenfassungen-Ordner des Kurses.
 
     Args:
         note_path: Vault-relativer Pfad der Quellnotiz.

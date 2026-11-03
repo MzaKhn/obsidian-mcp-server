@@ -52,7 +52,6 @@ sein können: liegt in einem Unterordner ein weiterer Vault, hat der eine eigene
 | `search_notes(query, limit=20)` | Sucht case-insensitiv in Dateinamen und Inhalten. Namenstreffer werden höher gewichtet; liefert Pfad + Textstellen. Read-only |
 | `get_note(path)` | Gibt den vollständigen Inhalt einer Notiz zurück. Read-only |
 | `create_flashcard(front, back, note_path, deck="")` | **Schreibt.** Hängt eine Karte an `<Kurs>/Flashcards/<deck>.md` an |
-| `generate_summary(note_path)` | Bereitet eine Notiz strukturiert auf. Read-only |
 | `save_summary(note_path, summary)` | **Schreibt.** Legt `<Kurs>/Zusammenfassungen/<Notiz>.md` an |
 | `generate_study_plan(courses, deadlines, hours_per_subtopic=1.5, dry_run=False)` | **Schreibt.** Verteilt offene Unterthemen auf Tage und trägt sie in `data.json` ein |
 
@@ -87,13 +86,12 @@ Der Lernstand von Decks liegt in einer SQLite-Datenbank, nicht in den
 Markdown-Dateien. Der Server fasst sie nicht an — die FSRS-Historie bleibt
 unberührt.
 
-### Warum `generate_summary` nicht selbst zusammenfasst
+### Zusammenfassungen
 
-Der Server hat kein Sprachmodell. Er liefert die Notiz strukturiert zurück
-(Gliederung, Kennzahlen, Volltext); die Zusammenfassung schreibt das Modell auf
-der Client-Seite — also Claude Desktop. Gespeichert wird sie anschließend mit
-`save_summary`. Das ist die übliche MCP-Rollenverteilung: der Server liefert
-Kontext und führt Aktionen aus, das Modell formuliert.
+Der Server hat kein Sprachmodell. Claude liest die Notiz mit `get_note`, schreibt
+die Zusammenfassung selbst und speichert sie mit `save_summary`. Das ist die
+übliche MCP-Rollenverteilung: der Server liefert Kontext und führt Aktionen aus,
+das Modell formuliert.
 
 Soll der Server stattdessen selbst zusammenfassen, müsste er die Anthropic-API
 aufrufen und bräuchte einen eigenen API-Key.
