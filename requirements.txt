@@ -1,4 +1,1 @@
-# MCP Python SDK. 2.x ist ein Major-Release: FastMCP heißt jetzt MCPServer
-# und liegt unter mcp.server, nicht mehr unter mcp.server.fastmcp.
-# [cli] zieht typer + den "mcp"-Befehl für den Inspector mit.
 mcp[cli]>=2.0.0,<3.0.0

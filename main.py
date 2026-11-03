@@ -1,8 +1,4 @@
-"""MCP-Server für einen Obsidian-Vault.
-
-Stellt Suche, Notizzugriff, Flashcard-Erstellung, Zusammenfassungs-Vorbereitung
-und Lernplanung als MCP-Tools bereit. Getestet gegen mcp 2.0.0.
-"""
+"""MCP-Server für einen Obsidian-Vault."""
 
 from __future__ import annotations
 
@@ -16,16 +12,12 @@ from typing import Any
 
 from mcp.server import MCPServer
 
-# ── Konfiguration ────────────────────────────────────────────────────────────
-
 DEFAULT_VAULT = Path.home() / "Informatik/Vault"
 
 VAULT = Path(
     os.environ.get("OBSIDIAN_VAULT_PATH", str(DEFAULT_VAULT))
 ).expanduser().resolve()
 
-# data.json des Lerntracker-Plugins; per Env überschreibbar, weil jeder
-# verschachtelte Kurs-Vault eine eigene Datei hat.
 LERNTRACKER_DATA = Path(
     os.environ.get(
         "LERNTRACKER_DATA_PATH",
@@ -33,11 +25,8 @@ LERNTRACKER_DATA = Path(
     )
 ).expanduser()
 
-# Ordner, die bei Suche und Strukturauflistung nie auftauchen sollen.
 SKIP_DIRS = {".obsidian", ".git", ".trash", ".claude", "node_modules"}
 
-# Frontmatter für neu angelegte Deck-Dateien. Entspricht dem Format, das die
-# bestehenden Kartendateien im Vault benutzen (Plugin "decks" sucht #decks).
 DECK_FRONTMATTER = "---\ntags: [decks]\n---\n"
 
 mcp = MCPServer(
@@ -51,15 +40,7 @@ mcp = MCPServer(
 )
 
 
-# ── Pfad-Hilfen ──────────────────────────────────────────────────────────────
-
-
 def _resolve_in_vault(rel_path: str) -> Path:
-    """Löst einen vault-relativen Pfad auf und verhindert Ausbrüche.
-
-    Wirft ValueError bei absoluten Pfaden, ".."-Traversal oder Zielen
-    außerhalb des Vaults.
-    """
     if not rel_path or not rel_path.strip():
         raise ValueError("Leerer Pfad.")
 
@@ -74,7 +55,6 @@ def _resolve_in_vault(rel_path: str) -> Path:
 
 
 def _rel(path: Path) -> str:
-    """Vault-relativer Pfad als String mit /-Trennern."""
     return path.relative_to(VAULT).as_posix()
 
 
@@ -83,7 +63,6 @@ def _is_skipped(path: Path) -> bool:
 
 
 def _iter_notes():
-    """Alle .md-Dateien im Vault, ohne Plugin- und Systemordner."""
     for path in VAULT.rglob("*.md"):
         if path.is_file() and not _is_skipped(path):
             yield path
@@ -94,27 +73,15 @@ def _read(path: Path) -> str:
 
 
 def _course_of(rel_path: str) -> str | None:
-    """Kursordner einer vault-relativen Notiz.
-
-    Normalerweise die erste Pfadkomponente. Im PARA-Layout liegen die Kurse
-    unter nummerierten Bereichsordnern ("20 Bereiche/<Kurs>/…") — dann zählen
-    die ersten zwei.
-    """
+    # PARA-Layout: "20 Bereiche/<Kurs>/…" → zwei Komponenten zählen als Kurs.
     folders = Path(rel_path).parts[:-1]
     depth = 2 if folders and re.match(r"\d+ ", folders[0]) else 1
     return "/".join(folders[:depth]) if len(folders) >= depth else None
 
 
-# ── Tools ────────────────────────────────────────────────────────────────────
-
-
 @mcp.tool()
 def search_notes(query: str, limit: int = 20) -> str:
-    """Durchsucht den Vault nach Notizen, die zum Stichwort passen.
-
-    Sucht case-insensitiv in Dateinamen und Inhalten. Treffer im Dateinamen
-    werden höher gewichtet. Gibt pro Treffer den vault-relativen Pfad und
-    passende Textstellen zurück.
+    """Durchsucht Dateinamen und Inhalte des Vaults (case-insensitiv) und gibt Pfade mit Textstellen zurück.
 
     Args:
         query: Suchbegriff oder Phrase.
@@ -140,7 +107,6 @@ def search_notes(query: str, limit: int = 20) -> str:
         if not name_hit and not matching:
             continue
 
-        # Dateinamentreffer wiegen schwerer als einzelne Zeilentreffer.
         score = (100 if name_hit else 0) + len(matching)
         snippets = [ln[:200] for ln in matching[:3]]
         hits.append((score, rel, snippets))
@@ -161,7 +127,7 @@ def search_notes(query: str, limit: int = 20) -> str:
 
 @mcp.tool()
 def get_note(path: str) -> str:
-    """Gibt den vollständigen Inhalt einer bestimmten Notiz zurück.
+    """Gibt den vollständigen Inhalt einer Notiz zurück.
 
     Args:
         path: Vault-relativer Pfad, z. B. "<Kursordner>/Flashcards/<Thema>.md".
@@ -179,12 +145,7 @@ def get_note(path: str) -> str:
 
 @mcp.tool()
 def create_flashcard(front: str, back: str, note_path: str, deck: str = "") -> str:
-    """Erstellt eine Flashcard und verknüpft sie mit der Quellnotiz.
-
-    Schreibt im Decks-Format (Header-Paragraph): die Frage wird eine
-    "## "-Überschrift, die Antwort der Absatz darunter, gefolgt von einem
-    Wikilink auf die Quellnotiz. Die Karte wird an die Deck-Datei angehängt;
-    existiert sie noch nicht, wird sie mit "tags: [decks]" angelegt.
+    """Hängt eine Flashcard im Decks-Format (## Frage / Antwort / Quellen-Wikilink) an die Deck-Datei des Kurses an.
 
     Args:
         front: Vorderseite der Karte (die Frage).
@@ -227,7 +188,6 @@ def create_flashcard(front: str, back: str, note_path: str, deck: str = "") -> s
 
     existing = _read(deck_file)
 
-    # Doppelte Fragen vermeiden — decks würde sie als zwei Karten führen.
     if re.search(rf"^##\s+{re.escape(front)}\s*$", existing, re.MULTILINE):
         return f"Übersprungen: Karte {front!r} existiert bereits in {_rel(deck_file)}."
 
@@ -241,12 +201,7 @@ def create_flashcard(front: str, back: str, note_path: str, deck: str = "") -> s
 
 @mcp.tool()
 def generate_summary(note_path: str) -> str:
-    """Bereitet eine Notiz für eine Zusammenfassung auf.
-
-    Der Server fasst nicht selbst zusammen — er hat kein Sprachmodell. Er
-    liefert die Notiz strukturiert (Gliederung, Abschnitte, Kennzahlen) zurück,
-    damit das aufrufende Modell daraus die Zusammenfassung schreibt. Zum
-    Speichern anschließend save_summary aufrufen.
+    """Liefert eine Notiz strukturiert (Gliederung, Volltext) zurück, damit das Modell sie zusammenfasst; danach save_summary aufrufen.
 
     Args:
         note_path: Vault-relativer Pfad der Notiz.
@@ -324,18 +279,8 @@ def save_summary(note_path: str, summary: str) -> str:
     return f"Zusammenfassung geschrieben: {_rel(out_file)}"
 
 
-# ── Lernplanung ──────────────────────────────────────────────────────────────
-
-
+# Kein @dataclass: "mcp dev" lädt das Modul ohne sys.modules-Eintrag, daran scheitert dataclass.
 class _Slot:
-    """Ein Lerntag mit verbleibender Kapazität in Stunden.
-
-    Bewusst kein @dataclass: "mcp dev" lädt main.py über einen Loader, der das
-    Modul nicht in sys.modules einträgt. Zusammen mit "from __future__ import
-    annotations" (String-Annotationen) scheitert dataclass dann beim Auflösen
-    der Feldtypen mit AttributeError auf NoneType.
-    """
-
     __slots__ = ("day", "remaining")
 
     def __init__(self, day: date, remaining: float) -> None:
@@ -353,7 +298,6 @@ def _load_tracker() -> dict[str, Any]:
 
 
 def _build_slots(settings: dict[str, Any], until: date) -> list[_Slot]:
-    """Erzeugt Lerntage von heute bis 'until' mit Kapazität aus weeklyHours."""
     weekly = settings.get("weeklyHours") or {}
     blocked = set(settings.get("blockedDates") or [])
 
@@ -366,8 +310,7 @@ def _build_slots(settings: dict[str, Any], until: date) -> list[_Slot]:
     day = start
     while day <= until:
         iso = day.isoformat()
-        # weeklyHours ist in JSON mit String-Keys "0".."6" (0 = Sonntag).
-        # Pythons weekday() ist Mo=0, daher isoweekday() % 7.
+        # weeklyHours-Keys "0".."6" mit 0 = Sonntag.
         hours = float(weekly.get(str(day.isoweekday() % 7), 0) or 0)
         if hours > 0 and iso not in blocked:
             slots.append(_Slot(day=day, remaining=hours))
@@ -382,16 +325,10 @@ def generate_study_plan(
     hours_per_subtopic: float = 1.5,
     dry_run: bool = False,
 ) -> str:
-    """Generiert einen Lernplan und schreibt ihn in den Lerntracker.
+    """Verteilt offene Unterthemen der Kurse auf Lerntage und schreibt sie (mit Backup) in die data.json des Lerntrackers.
 
-    Verteilt alle offenen Unterthemen der genannten Kurse auf konkrete Tage
-    und schreibt die Ergebnisse als "dates"-Arrays in die data.json des
-    Lerntracker-Plugins. Kurse mit früherer Klausur werden zuerst eingeplant.
-    Verfügbare Stunden pro Wochentag, blockierte Tage und die Puffertage vor
-    der Klausur werden respektiert. Vor dem Schreiben entsteht ein Backup.
-
-    Bereits abgehakte Unterthemen und solche mit vorhandener Tageszuweisung
-    bleiben unangetastet.
+    Frühere Klausuren zuerst; Wochenstunden, blockierte Tage und Puffertage
+    werden respektiert. Abgehakte oder bereits verplante Unterthemen bleiben unangetastet.
 
     Args:
         courses: Namen der einzuplanenden Themen, wie im Lerntracker hinterlegt.
@@ -415,7 +352,6 @@ def generate_study_plan(
             f"Vorhanden: {', '.join(sorted(n for n in by_name if n))}"
         )
 
-    # Klausurtermine aus dem Argument haben Vorrang vor der data.json.
     planned: list[tuple[date, dict[str, Any]]] = []
     for name in courses:
         topic = by_name[name]
@@ -496,7 +432,6 @@ def generate_study_plan(
     if dry_run:
         return "\n".join(header + report + ["(dry_run: data.json wurde nicht verändert.)"])
 
-    # Zuweisungen eintragen und atomar über eine Temp-Datei schreiben.
     for topic in topics:
         subs = assignments.get(topic.get("name"))
         if not subs:
@@ -529,9 +464,6 @@ def generate_study_plan(
     )
 
 
-# ── Resources ────────────────────────────────────────────────────────────────
-
-
 @mcp.resource(
     "vault://structure",
     name="Vault-Struktur",
@@ -539,7 +471,6 @@ def generate_study_plan(
     mime_type="text/plain",
 )
 def vault_structure() -> str:
-    """Listet die Ordnerstruktur des Vaults zum Browsen auf."""
     counts: dict[str, int] = {}
     for path in _iter_notes():
         folder = path.parent.relative_to(VAULT).as_posix() or "."
@@ -560,11 +491,6 @@ def vault_structure() -> str:
     mime_type="text/markdown",
 )
 def note_resource(path: str) -> str:
-    """Gibt den Inhalt der Notiz unter dem angegebenen Vault-Pfad zurück.
-
-    Args:
-        path: Vault-relativer Pfad, z. B. "<Kursordner>/Zusammenfassungen/<Thema>.md".
-    """
     target = _resolve_in_vault(path)
     if not target.is_file():
         raise FileNotFoundError(f"Notiz nicht gefunden: {path}")

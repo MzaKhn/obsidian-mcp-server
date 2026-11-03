@@ -1,15 +1,8 @@
-# Python
 __pycache__/
 *.py[cod]
 *.egg-info/
-
-# Virtuelle Umgebungen
 .venv/
 venv/
 env/
-
-# macOS
 .DS_Store
-
-# Logs
 *.log
